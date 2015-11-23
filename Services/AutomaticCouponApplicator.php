@@ -15,20 +15,25 @@
  * @author Elcodi Team <tech@elcodi.com>
  */
 
-namespace Elcodi\Component\CartCoupon\EventListener;
+namespace Elcodi\Component\CartCoupon\Services;
 
 use Doctrine\Common\Persistence\ObjectRepository;
 
-use Elcodi\Component\Cart\Event\CartOnLoadEvent;
-use Elcodi\Component\CartCoupon\Services\CartCouponManager;
+use Elcodi\Component\Cart\Entity\Interfaces\CartInterface;
 use Elcodi\Component\Coupon\ElcodiCouponTypes;
 use Elcodi\Component\Coupon\Entity\Interfaces\CouponInterface;
 use Elcodi\Component\Coupon\Exception\Abstracts\AbstractCouponException;
 
 /**
- * Class AutomaticCouponApplicatorEventListener
+ * Class AutomaticCouponApplicator
+ *
+ * API methods:
+ *
+ * * tryAutomaticCoupons(CartInterface)
+ *
+ * @api
  */
-class AutomaticCouponApplicatorEventListener
+class AutomaticCouponApplicator
 {
     /**
      * @var CartCouponManager
@@ -64,26 +69,15 @@ class AutomaticCouponApplicatorEventListener
      * Iterate over all automatic Coupons and check if they apply.
      * If any applies, it will be added to the Cart
      *
-     * @param CartOnLoadEvent $event Event
-     *
-     * @return null
+     * @param CartInterface $cart Cart
      */
-    public function tryAutomaticCoupons(CartOnLoadEvent $event)
+    public function tryAutomaticCoupons(CartInterface $cart)
     {
-        $cart = $event->getCart();
-
         if ($cart->getCartLines()->isEmpty()) {
-            return null;
+            return;
         }
 
-        /**
-         * @var CouponInterface[] $automaticCoupons
-         */
-        $automaticCoupons = $this
-            ->couponRepository
-            ->findBy([
-                'enforcement' => ElcodiCouponTypes::ENFORCEMENT_AUTOMATIC,
-            ]);
+        $automaticCoupons = $this->getNonAppliedAutomaticCoupons($cart);
 
         foreach ($automaticCoupons as $coupon) {
             try {
@@ -94,5 +88,33 @@ class AutomaticCouponApplicatorEventListener
                 // Silently tries next coupon on controlled exception
             }
         }
+    }
+
+    /**
+     * Get current cart automatic coupons
+     *
+     * @param CartInterface $cart Cart
+     *
+     * @returns CouponInterface[] Array of non applied coupons
+     */
+    private function getNonAppliedAutomaticCoupons(CartInterface $cart)
+    {
+        $automaticCoupons = $this
+            ->couponRepository
+            ->findBy([
+                'enforcement' => ElcodiCouponTypes::ENFORCEMENT_AUTOMATIC,
+            ]);
+
+        $loadedAutomaticCoupons = $this
+            ->cartCouponManager
+            ->getCoupons($cart);
+
+        return array_udiff(
+            $automaticCoupons,
+            $loadedAutomaticCoupons,
+            function (CouponInterface $a, CouponInterface $b) {
+                return $a->getId() != $b->getId();
+            }
+        );
     }
 }

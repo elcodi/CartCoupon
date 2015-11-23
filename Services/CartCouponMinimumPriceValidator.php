@@ -15,18 +15,23 @@
  * @author Elcodi Team <tech@elcodi.com>
  */
 
-namespace Elcodi\Component\CartCoupon\EventListener;
+namespace Elcodi\Component\CartCoupon\Services;
 
-use Elcodi\Component\CartCoupon\Event\CartCouponOnCheckEvent;
+use Elcodi\Component\Cart\Entity\Interfaces\CartInterface;
+use Elcodi\Component\Coupon\Entity\Interfaces\CouponInterface;
 use Elcodi\Component\Coupon\Exception\CouponBelowMinimumPurchaseException;
 use Elcodi\Component\Currency\Services\CurrencyConverter;
 
 /**
- * Class MinimumPriceCouponEventListener
+ * Class CartCouponMinimumPriceValidator
  *
- * @author Berny Cantos <be@rny.cc>
+ * API methods:
+ *
+ * * validateCartCouponMinimumPrice(CartInterface, CouponInterface)
+ *
+ * @api
  */
-class MinimumPriceCouponEventListener
+class CartCouponMinimumPriceValidator
 {
     /**
      * @var CurrencyConverter
@@ -48,25 +53,22 @@ class MinimumPriceCouponEventListener
     /**
      * Check if cart meets minimum price requirements for a coupon
      *
-     * @param CartCouponOnCheckEvent $event Event
-     *
-     * @return null
+     * @param CartInterface   $cart   Cart
+     * @param CouponInterface $coupon Coupon
      *
      * @throws CouponBelowMinimumPurchaseException Minimum value not reached
      */
-    public function checkMinimumPrice(CartCouponOnCheckEvent $event)
-    {
-        $couponMinimumPrice = $event
-            ->getCoupon()
-            ->getMinimumPurchase();
+    public function validateCartCouponMinimumPrice(
+        CartInterface $cart,
+        CouponInterface $coupon
+    ) {
+        $couponMinimumPrice = $coupon->getMinimumPurchase();
 
         if ($couponMinimumPrice->getAmount() === 0) {
-            return null;
+            return;
         }
 
-        $productMoney = $event
-            ->getCart()
-            ->getProductAmount();
+        $productMoney = $cart->getProductAmount();
 
         if ($couponMinimumPrice->getCurrency() != $productMoney->getCurrency()) {
             $couponMinimumPrice = $this

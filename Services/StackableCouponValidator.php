@@ -24,9 +24,15 @@ use Elcodi\Component\CartCoupon\Repository\CartCouponRepository;
 use Elcodi\Component\Coupon\Entity\Interfaces\CouponInterface;
 
 /**
- * Class StackableCouponChecker
+ * Class StackableCouponValidator
+ *
+ * API methods:
+ *
+ * * validateStackableCoupon(CartInterface, CouponInterface)
+ *
+ * @api
  */
-class StackableCouponChecker
+class StackableCouponValidator
 {
     /**
      * @var CartCouponRepository
@@ -53,11 +59,9 @@ class StackableCouponChecker
      * @param CartInterface   $cart   Cart
      * @param CouponInterface $coupon Coupon
      *
-     * @return null
-     *
      * @throws CouponNotStackableException Coupon is not stackable
      */
-    public function checkStackableCoupon(
+    public function validateStackableCoupon(
         CartInterface $cart,
         CouponInterface $coupon
     ) {
@@ -92,7 +96,7 @@ class StackableCouponChecker
          * previously applied is also stackable
          */
         if ($coupon->getStackable() && $appliedCouponsCanBeStacked) {
-            return null;
+            return;
         }
 
         throw new CouponNotStackableException();

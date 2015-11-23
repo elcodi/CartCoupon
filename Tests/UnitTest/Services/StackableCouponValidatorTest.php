@@ -15,17 +15,17 @@
  * @author Elcodi Team <tech@elcodi.com>
  */
 
-namespace Elcodi\Component\CartCoupon\Tests\Services;
+namespace Elcodi\Component\CartCoupon\Tests\UnitTest\Services;
 
 use PHPUnit_Framework_TestCase;
 
 use Elcodi\Component\CartCoupon\Exception\CouponNotStackableException;
-use Elcodi\Component\CartCoupon\Services\StackableCouponChecker;
+use Elcodi\Component\CartCoupon\Services\StackableCouponValidator;
 
 /**
- * Class StackableCouponCheckerTest
+ * Class StackableCouponValidatorTest
  */
-class StackableCouponCheckerTest extends PHPUnit_Framework_TestCase
+class StackableCouponValidatorTest extends PHPUnit_Framework_TestCase
 {
     /**
      * Test cart with stackable coupon and all stacked coupons are stackable
@@ -54,13 +54,13 @@ class StackableCouponCheckerTest extends PHPUnit_Framework_TestCase
             ->findBy(['cart' => $cart])
             ->willReturn($this->getCartCouponsArray($stackables));
 
-        $stackableCouponChecker = new StackableCouponChecker(
+        $stackableCouponChecker = new StackableCouponValidator(
             $cartCouponRepository->reveal()
         );
 
         try {
             $stackableCouponChecker
-                ->checkStackableCoupon(
+                ->validateStackableCoupon(
                     $cart,
                     $coupon->reveal()
                 );

@@ -18,29 +18,28 @@
 namespace Elcodi\Component\CartCoupon\EventListener;
 
 use Elcodi\Component\CartCoupon\Event\CartCouponOnApplyEvent;
-use Elcodi\Component\CartCoupon\Exception\CouponNotStackableException;
-use Elcodi\Component\CartCoupon\Services\StackableCouponChecker;
+use Elcodi\Component\CartCoupon\Services\StackableCouponValidator;
 
 /**
- * Class CheckStackableCouponsEventListener
+ * Class ValidateStackableCouponsEventListener
  */
-class CheckStackableCouponsEventListener
+final class ValidateStackableCouponsEventListener
 {
     /**
-     * @var StackableCouponChecker
+     * @var StackableCouponValidator
      *
-     * Stackable Coupon Checker
+     * Stackable Coupon Validator
      */
-    private $stackableCouponChecker;
+    private $stackableCouponValidator;
 
     /**
      * Construct method
      *
-     * @param StackableCouponChecker $stackableCouponChecker Stackable Coupon Checker
+     * @param StackableCouponValidator $stackableCouponValidator Stackable Coupon Validator
      */
-    public function __construct(StackableCouponChecker $stackableCouponChecker)
+    public function __construct(StackableCouponValidator $stackableCouponValidator)
     {
-        $this->stackableCouponChecker = $stackableCouponChecker;
+        $this->stackableCouponValidator = $stackableCouponValidator;
     }
 
     /**
@@ -48,16 +47,12 @@ class CheckStackableCouponsEventListener
      * been applied
      *
      * @param CartCouponOnApplyEvent $event Event
-     *
-     * @return null
-     *
-     * @throws CouponNotStackableException
      */
-    public function checkStackableCoupon(CartCouponOnApplyEvent $event)
+    public function validateStackableCoupon(CartCouponOnApplyEvent $event)
     {
         $this
-            ->stackableCouponChecker
-            ->checkStackableCoupon(
+            ->stackableCouponValidator
+            ->validateStackableCoupon(
                 $event->getCart(),
                 $event->getCoupon()
             );

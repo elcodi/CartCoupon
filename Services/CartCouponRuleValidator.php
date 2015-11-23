@@ -17,14 +17,23 @@
 
 namespace Elcodi\Component\CartCoupon\Services;
 
+use Exception;
+
 use Elcodi\Component\Cart\Entity\Interfaces\CartInterface;
+use Elcodi\Component\CartCoupon\Exception\CouponRulesNotValidateException;
 use Elcodi\Component\Coupon\Entity\Interfaces\CouponInterface;
 use Elcodi\Component\Rule\Services\Interfaces\RuleManagerInterface;
 
 /**
- * Class CouponRuleManager
+ * Class CartCouponRuleValidator
+ *
+ * API methods:
+ *
+ * * validateCartCouponRules(CartInterface, CouponInterface)
+ *
+ * @api
  */
-class CartCouponRuleManager
+class CartCouponRuleValidator
 {
     /**
      * @var RuleManagerInterface
@@ -50,20 +59,20 @@ class CartCouponRuleManager
      * @param CartInterface   $cart   Cart
      * @param CouponInterface $coupon Coupon
      *
-     * @return boolean Coupon is valid
+     * @throws CouponRulesNotValidateException Rules not valid
      */
-    public function checkCouponValidity(
+    public function validateCartCouponRules(
         CartInterface $cart,
         CouponInterface $coupon
     ) {
         $rule = $coupon->getRule();
 
         if (null === $rule) {
-            return true;
+            return;
         }
 
         try {
-            return $this
+            $isValid = $this
                 ->ruleManager
                 ->evaluate(
                     $rule,
@@ -72,10 +81,16 @@ class CartCouponRuleManager
                         'coupon' => $coupon,
                     ]
                 );
-        } catch (\Exception $e) {
+
+            if (!$isValid) {
+                throw new CouponRulesNotValidateException();
+            }
+
+            return;
+        } catch (Exception $e) {
             // Maybe log something in case of exception?
         }
 
-        return false;
+        throw new CouponRulesNotValidateException();
     }
 }

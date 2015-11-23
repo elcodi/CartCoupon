@@ -15,36 +15,28 @@
  * @author Elcodi Team <tech@elcodi.com>
  */
 
-namespace Elcodi\Component\CartCoupon\EventListener;
+namespace Elcodi\Component\CartCoupon\Services;
 
 use Elcodi\Component\Cart\Entity\Interfaces\CartInterface;
-use Elcodi\Component\Cart\Event\CartOnLoadEvent;
-use Elcodi\Component\CartCoupon\EventDispatcher\CartCouponEventDispatcher;
-use Elcodi\Component\CartCoupon\Services\CartCouponManager;
 use Elcodi\Component\Coupon\ElcodiCouponTypes;
 use Elcodi\Component\Coupon\Entity\Interfaces\CouponInterface;
-use Elcodi\Component\Coupon\Exception\Abstracts\AbstractCouponException;
-use Elcodi\Component\Coupon\Services\CouponManager;
 use Elcodi\Component\Currency\Entity\Interfaces\MoneyInterface;
 use Elcodi\Component\Currency\Entity\Money;
 use Elcodi\Component\Currency\Services\CurrencyConverter;
 use Elcodi\Component\Currency\Wrapper\CurrencyWrapper;
 
 /**
- * Class RefreshCouponsEventListener
+ * Class CartCouponPricesLoader
  *
- * This event listener should update the cart given in the event, applying
- * all the coupon features.
+ * API methods:
+ *
+ * * refreshCouponAmount(CartInterface)
+ * * getCouponAbsolutePrice(CartInterface, CouponInterface)
+ *
+ * @api
  */
-class RefreshCouponsEventListener
+class CartCouponPricesLoader
 {
-    /**
-     * @var CouponManager
-     *
-     * Coupon Manager
-     */
-    private $couponManager;
-
     /**
      * @var CartCouponManager
      *
@@ -67,92 +59,30 @@ class RefreshCouponsEventListener
     private $currencyWrapper;
 
     /**
-     * @var CartCouponEventDispatcher
-     *
-     * CartCoupon Event Dispatcher
-     */
-    private $cartCouponEventDispatcher;
-
-    /**
      * Construct method
      *
-     * @param CouponManager             $couponManager             Coupon manager
-     * @param CartCouponManager         $cartCouponManager         Cart coupon manager
-     * @param CurrencyWrapper           $currencyWrapper           Currency wrapper
-     * @param CurrencyConverter         $currencyConverter         Currency converter
-     * @param CartCouponEventDispatcher $cartCouponEventDispatcher $cartCouponEventDispatcher
+     * @param CartCouponManager $cartCouponManager Cart coupon manager
+     * @param CurrencyWrapper   $currencyWrapper   Currency wrapper
+     * @param CurrencyConverter $currencyConverter Currency converter
      */
     public function __construct(
-        CouponManager $couponManager,
         CartCouponManager $cartCouponManager,
         CurrencyWrapper $currencyWrapper,
-        CurrencyConverter $currencyConverter,
-        CartCouponEventDispatcher $cartCouponEventDispatcher
+        CurrencyConverter $currencyConverter
     ) {
-        $this->couponManager = $couponManager;
         $this->cartCouponManager = $cartCouponManager;
         $this->currencyWrapper = $currencyWrapper;
         $this->currencyConverter = $currencyConverter;
-        $this->cartCouponEventDispatcher = $cartCouponEventDispatcher;
     }
 
     /**
-     * Method subscribed to CartLoad event
-     *
-     * Checks if all Coupons applied to current cart are still valid.
-     * If are not, they will be deleted from the Cart and new Event typeof
-     * CartCouponOnRejected will be dispatched
-     *
-     * @param CartOnLoadEvent $event Event
-     */
-    public function refreshCartCoupons(CartOnLoadEvent $event)
-    {
-        $cart = $event->getCart();
-
-        $cartCoupons = $this
-            ->cartCouponManager
-            ->getCartCoupons($cart);
-
-        foreach ($cartCoupons as $cartCoupon) {
-            $coupon = $cartCoupon->getCoupon();
-
-            try {
-                $this
-                    ->cartCouponEventDispatcher
-                    ->dispatchCartCouponOnCheckEvent(
-                        $cart,
-                        $coupon
-                    );
-            } catch (AbstractCouponException $exception) {
-                $this
-                    ->cartCouponManager
-                    ->removeCoupon(
-                        $cart,
-                        $coupon
-                    );
-
-                $this
-                    ->cartCouponEventDispatcher
-                    ->dispatchCartCouponOnRejectedEvent(
-                        $cart,
-                        $coupon
-                    );
-            }
-        }
-    }
-
-    /**
-     * Method subscribed to CartLoad event.
-     *
      * Calculates coupons price given actual Cart, and overrides Cart price
      * given new information.
      *
-     * @param CartOnLoadEvent $event
+     * @param CartInterface $cart Cart
      */
-    public function refreshCouponAmount(CartOnLoadEvent $event)
+    public function refreshCouponAmount(CartInterface $cart)
     {
-        $cart = $event->getCart();
-
         $couponAmount = Money::create(
             0,
             $this
@@ -166,7 +96,7 @@ class RefreshCouponsEventListener
 
         foreach ($coupons as $coupon) {
             $currentCouponAmount = $this
-                ->getPriceCoupon(
+                ->getCouponAbsolutePrice(
                     $cart,
                     $coupon
                 );
@@ -175,7 +105,10 @@ class RefreshCouponsEventListener
         }
 
         $cart->setCouponAmount($couponAmount);
-        $cart->setAmount($cart->getAmount()->subtract($couponAmount));
+        $amount = $cart->getProductAmount();
+        $amount = $amount->add($cart->getShippingAmount());
+        $amount = $amount->subtract($couponAmount);
+        $cart->setAmount($amount);
     }
 
     /**
@@ -188,7 +121,7 @@ class RefreshCouponsEventListener
      *
      * @return MoneyInterface Coupon price
      */
-    private function getPriceCoupon(
+    public function getCouponAbsolutePrice(
         CartInterface $cart,
         CouponInterface $coupon
     ) {

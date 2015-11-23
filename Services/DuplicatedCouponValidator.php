@@ -15,16 +15,23 @@
  * @author Elcodi Team <tech@elcodi.com>
  */
 
-namespace Elcodi\Component\CartCoupon\EventListener;
+namespace Elcodi\Component\CartCoupon\Services;
 
-use Elcodi\Component\CartCoupon\Event\CartCouponOnApplyEvent;
+use Elcodi\Component\Cart\Entity\Interfaces\CartInterface;
 use Elcodi\Component\CartCoupon\Exception\CouponAlreadyAppliedException;
 use Elcodi\Component\CartCoupon\Repository\CartCouponRepository;
+use Elcodi\Component\Coupon\Entity\Interfaces\CouponInterface;
 
 /**
- * Class AvoidDuplicatesEventListener
+ * Class DuplicatedCouponValidator
+ *
+ * API methods:
+ *
+ * * validateDuplicatedCoupon(CartInterface, CouponInterface)
+ *
+ * @api
  */
-class AvoidDuplicatesEventListener
+class DuplicatedCouponValidator
 {
     /**
      * @var CartCouponRepository
@@ -36,7 +43,7 @@ class AvoidDuplicatesEventListener
     /**
      * Construct method
      *
-     * @param CartCouponRepository $cartCouponRepository Repository where to find cartcoupons
+     * @param CartCouponRepository $cartCouponRepository Repository where to find cart coupons
      */
     public function __construct(CartCouponRepository $cartCouponRepository)
     {
@@ -46,17 +53,20 @@ class AvoidDuplicatesEventListener
     /**
      * Check if this coupon is already applied to the cart
      *
-     * @param CartCouponOnApplyEvent $event Event
+     * @param CartInterface   $cart   Cart
+     * @param CouponInterface $coupon Coupon
      *
-     * @throws CouponAlreadyAppliedException
+     * @throws CouponAlreadyAppliedException Coupon already applied
      */
-    public function checkDuplicates(CartCouponOnApplyEvent $event)
-    {
+    public function validateDuplicatedCoupon(
+        CartInterface $cart,
+        CouponInterface $coupon
+    ) {
         $cartCoupon = $this
             ->cartCouponRepository
             ->findOneBy([
-                'cart'   => $event->getCart(),
-                'coupon' => $event->getCoupon(),
+                'cart'   => $cart,
+                'coupon' => $coupon,
             ]);
 
         if (null !== $cartCoupon) {

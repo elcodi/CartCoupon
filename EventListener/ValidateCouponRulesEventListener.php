@@ -18,49 +18,42 @@
 namespace Elcodi\Component\CartCoupon\EventListener;
 
 use Elcodi\Component\CartCoupon\Event\CartCouponOnCheckEvent;
-use Elcodi\Component\CartCoupon\Exception\CouponRulesNotValidateException;
-use Elcodi\Component\CartCoupon\Services\CartCouponRuleManager;
+use Elcodi\Component\CartCoupon\Services\CartCouponRuleValidator;
 
 /**
- * Class CheckRulesEventListener
+ * Class ValidateCouponRulesEventListener
  */
-class CheckRulesEventListener
+final class ValidateCouponRulesEventListener
 {
     /**
-     * @var CartCouponRuleManager
+     * @var CartCouponRuleValidator
      *
-     * CartCoupon Rule managers
+     * CartCoupon Rule validators
      */
-    private $cartCouponRuleManager;
+    private $cartCouponRuleValidator;
 
     /**
      * Construct method
      *
-     * @param CartCouponRuleManager $cartCouponRuleManager Manager for cart coupon rules
+     * @param CartCouponRuleValidator $cartCouponRuleValidator Validator for cart coupon rules
      */
-    public function __construct(CartCouponRuleManager $cartCouponRuleManager)
+    public function __construct(CartCouponRuleValidator $cartCouponRuleValidator)
     {
-        $this->cartCouponRuleManager = $cartCouponRuleManager;
+        $this->cartCouponRuleValidator = $cartCouponRuleValidator;
     }
 
     /**
      * Check for the rules required by the coupon
      *
      * @param CartCouponOnCheckEvent $event Event
-     *
-     * @throws CouponRulesNotValidateException
      */
-    public function checkCoupon(CartCouponOnCheckEvent $event)
+    public function validateCartCouponRules(CartCouponOnCheckEvent $event)
     {
-        $isValid = $this
-            ->cartCouponRuleManager
-            ->checkCouponValidity(
+        $this
+            ->cartCouponRuleValidator
+            ->validateCartCouponRules(
                 $event->getCart(),
                 $event->getCoupon()
             );
-
-        if (!$isValid) {
-            throw new CouponRulesNotValidateException();
-        }
     }
 }

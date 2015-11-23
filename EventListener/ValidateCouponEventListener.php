@@ -18,32 +18,29 @@
 namespace Elcodi\Component\CartCoupon\EventListener;
 
 use Elcodi\Component\CartCoupon\Event\CartCouponOnCheckEvent;
+use Elcodi\Component\CartCoupon\Services\CartCouponValidator;
 use Elcodi\Component\Coupon\Exception\Abstracts\AbstractCouponException;
-use Elcodi\Component\Coupon\Exception\CouponIncompatibleException;
-use Elcodi\Component\Coupon\Services\CouponManager;
 
 /**
- * Class CheckCouponEventListener
- *
- * @author Berny Cantos <be@rny.cc>
+ * Class ValidateCouponEventListener
  */
-class CheckCouponEventListener
+final class ValidateCouponEventListener
 {
     /**
-     * @var CouponManager
+     * @var CartCouponValidator
      *
-     * Coupon Manager
+     * CartCoupon validator
      */
-    private $couponManager;
+    private $cartCouponValidator;
 
     /**
      * Constructor
      *
-     * @param CouponManager $couponManager
+     * @param CartCouponValidator $cartCouponValidator CartCoupon validator
      */
-    public function __construct(CouponManager $couponManager)
+    public function __construct(CartCouponValidator $cartCouponValidator)
     {
-        $this->couponManager = $couponManager;
+        $this->cartCouponValidator = $cartCouponValidator;
     }
 
     /**
@@ -53,16 +50,13 @@ class CheckCouponEventListener
      *
      * @throws AbstractCouponException
      */
-    public function checkCoupon(CartCouponOnCheckEvent $event)
+    public function validateCoupon(CartCouponOnCheckEvent $event)
     {
-        if ($event->getCart()->getTotalItemNumber() === 0) {
-            throw new CouponIncompatibleException();
-        }
-
-        $coupon = $event->getCoupon();
-
         $this
-            ->couponManager
-            ->checkCoupon($coupon);
+            ->cartCouponValidator
+            ->validateCoupon(
+                $event->getCart(),
+                $event->getCoupon()
+            );
     }
 }
